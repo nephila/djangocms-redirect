@@ -28,6 +28,7 @@ class RedirectMiddleware(MiddlewareMixin):
         super().__init__(*args, **kwargs)
 
     def do_redirect(self, request, response=None):
+        site_id = int(settings.SITE_ID)
         if getattr(settings, "DJANGOCMS_REDIRECT_404_ONLY", True) and response and response.status_code != 404:
             return response
 
@@ -52,7 +53,7 @@ class RedirectMiddleware(MiddlewareMixin):
 
         current_site = get_current_site(request)
         r = None
-        key = get_key_from_path_and_site(req_path, settings.SITE_ID)
+        key = get_key_from_path_and_site(req_path, site_id)
         cached_redirect = cache.get(key)
 
         if not cached_redirect:
@@ -68,7 +69,7 @@ class RedirectMiddleware(MiddlewareMixin):
                         break
 
             cached_redirect = {
-                "site": settings.SITE_ID,
+                "site": site_id,
                 "redirect": r.new_path if r else None,
                 "status_code": r.response_code if r else None,
             }
