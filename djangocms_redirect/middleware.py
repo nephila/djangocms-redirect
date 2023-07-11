@@ -15,7 +15,6 @@ from .utils import get_key_from_path_and_site
 
 
 class RedirectMiddleware(MiddlewareMixin):
-
     # Defined as class-level attributes to be subclassing-friendly.
     response_gone_class = http.HttpResponseGone
     response_redirect_class = http.HttpResponseRedirect

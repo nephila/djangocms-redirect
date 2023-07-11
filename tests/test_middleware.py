@@ -12,7 +12,6 @@ from . import BaseRedirectTest
 
 
 class TestRedirect(BaseRedirectTest):
-
     _pages_data = (
         {"en": {"title": "home page", "template": "page.html", "publish": True}},
         {"en": {"title": "test page", "template": "page.html", "publish": True}},
@@ -337,7 +336,6 @@ class TestRedirect(BaseRedirectTest):
 
 
 class TestClean(BaseRedirectTest):
-
     _pages_data = ({"en": {"title": "home page", "template": "page.html", "publish": True}},)
 
     def _make_form(self, old_path):
