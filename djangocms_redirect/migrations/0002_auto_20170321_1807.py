@@ -4,7 +4,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("djangocms_redirect", "0001_initial"),
     ]
@@ -34,7 +33,8 @@ class Migration(migrations.Migration):
                     ("410", "410 - Permanently unavailable"),
                 ],
                 default="301",
-                help_text="This is the http response code returned if a destination is specified. If no destination is specified the response code will be 410.",
+                help_text="This is the http response code returned if a destination is specified. If no "
+                "destination is specified the response code will be 410.",
                 max_length=3,
                 verbose_name="response code",
             ),

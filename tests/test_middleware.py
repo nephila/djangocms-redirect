@@ -1,8 +1,11 @@
+from urllib.parse import unquote_plus
+
+import django
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
 from django.test.utils import override_settings
-from django.utils.encoding import force_text
-from django.utils.http import urlunquote_plus
+from django.utils.encoding import force_str
+from setuptools._distutils.version import LooseVersion
 
 from djangocms_redirect.admin import RedirectForm
 from djangocms_redirect.middleware import RedirectMiddleware
@@ -11,8 +14,9 @@ from djangocms_redirect.models import Redirect
 from . import BaseRedirectTest
 
 
-class TestRedirect(BaseRedirectTest):
+DJANGO_4_2 = LooseVersion(django.__version__) >= LooseVersion("4.2")
 
+class TestRedirect(BaseRedirectTest):
     _pages_data = (
         {"en": {"title": "home page", "template": "page.html", "publish": True}},
         {"en": {"title": "test page", "template": "page.html", "publish": True}},
@@ -29,8 +33,8 @@ class TestRedirect(BaseRedirectTest):
             new_path=pages[0].get_absolute_url(),
             response_code="301",
         )
-        self.assertIn(pages[1].get_absolute_url(), force_text(redirect))
-        self.assertIn(pages[0].get_absolute_url(), force_text(redirect))
+        self.assertIn(pages[1].get_absolute_url(), force_str(redirect))
+        self.assertIn(pages[0].get_absolute_url(), force_str(redirect))
 
     def test_301_redirect(self):
         pages = self.get_pages()
@@ -116,7 +120,7 @@ class TestRedirect(BaseRedirectTest):
         self.assertEqual(response.status_code, 302)
         self.assertRedirects(response, redirect.new_path, status_code=302)
 
-        unescaped_path = urlunquote_plus(escaped_path)
+        unescaped_path = unquote_plus(escaped_path)
         redirect.old_path = unescaped_path
         redirect.save()
 
@@ -286,10 +290,19 @@ class TestRedirect(BaseRedirectTest):
             )
 
             # django append slash settings kicks in before djangocms-redirect, redirecting to /a/
+            print("====== GET /en/a ======")
             response = self.client.get("/en/a")
-            self.assertRedirects(response, "/en/a/", status_code=301, fetch_redirect_response=False)
-            response = self.client.get(response["Location"])
-            self.assertEqual(404, response.status_code)
+            # django 4.2 skips APPEND_SLASH for successful requests
+            # see https://github.com/django/django/pull/15689
+            if DJANGO_4_2:
+                self.assertRedirects(response, "/en/b/", status_code=301, fetch_redirect_response=False)
+                print(response["Location"])
+            else:
+                self.assertRedirects(response, "/en/a/", status_code=301, fetch_redirect_response=False)
+                print(response["Location"])
+                response = self.client.get(response["Location"])
+                self.assertEqual(404, response.status_code)
+            print("====== END GET ======")
 
             # no redirect match
             response = self.client.get("/en/a/")
@@ -327,9 +340,14 @@ class TestRedirect(BaseRedirectTest):
             # django append slash settings kicks in before djangocms-redirect, redirecting to /a/
             # then redirect match
             response = self.client.get("/en/a")
-            self.assertRedirects(response, "/en/a/", status_code=301, fetch_redirect_response=False)
-            response = self.client.get(response["Location"])
-            self.assertRedirects(response, "/en/b/", status_code=301)
+            # django 4.2 skips APPEND_SLASH for successful requests
+            # see https://github.com/django/django/pull/15689
+            if DJANGO_4_2:
+                self.assertRedirects(response, "/en/b/", status_code=301)
+            else:
+                self.assertRedirects(response, "/en/a/", status_code=301, fetch_redirect_response=False)
+                response = self.client.get(response["Location"])
+                self.assertRedirects(response, "/en/b/", status_code=301)
 
             # redirect match
             response = self.client.get("/en/a/")
@@ -337,7 +355,6 @@ class TestRedirect(BaseRedirectTest):
 
 
 class TestClean(BaseRedirectTest):
-
     _pages_data = ({"en": {"title": "home page", "template": "page.html", "publish": True}},)
 
     def _make_form(self, old_path):
@@ -476,7 +493,7 @@ class TestNoSitesMatch(BaseRedirectTest):
 
         with self.assertRaises(ImproperlyConfigured) as context:
             self.client.get(pages[1].get_absolute_url())
-        self.assertEqual(RedirectMiddleware.no_site_message, force_text(context.exception))
+        self.assertEqual(RedirectMiddleware.no_site_message, force_str(context.exception))
 
 
 try:
@@ -488,7 +505,7 @@ else:
     @override_settings(
         CACHES={
             "default": {
-                "BACKEND": "django.core.cache.backends.memcached.MemcachedCache",
+                "BACKEND": "django.core.cache.backends.memcached.PyMemcacheCache",
                 "LOCATION": "127.0.0.1:11211",
             }
         }
