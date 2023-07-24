@@ -13,7 +13,6 @@ from djangocms_redirect.models import Redirect
 
 from . import BaseRedirectTest
 
-
 DJANGO_4_2 = LooseVersion(django.__version__) >= LooseVersion("4.2")
 
 class TestRedirect(BaseRedirectTest):
