@@ -15,6 +15,7 @@ from . import BaseRedirectTest
 
 DJANGO_4_2 = LooseVersion(django.__version__) >= LooseVersion("4.2")
 
+
 class TestRedirect(BaseRedirectTest):
     _pages_data = (
         {"en": {"title": "home page", "template": "page.html", "publish": True}},
