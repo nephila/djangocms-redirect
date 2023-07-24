@@ -1,6 +1,6 @@
--r requirements.txt
+-e .[docs]
 coverage
-coveralls
+coveralls>=2.0
 mock>=1.0.1
 tox>=1.7.0
 python-memcached
