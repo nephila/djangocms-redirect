@@ -290,19 +290,15 @@ class TestRedirect(BaseRedirectTest):
             )
 
             # django append slash settings kicks in before djangocms-redirect, redirecting to /a/
-            print("====== GET /en/a ======")
             response = self.client.get("/en/a")
             # django 4.2 skips APPEND_SLASH for successful requests
             # see https://github.com/django/django/pull/15689
             if DJANGO_4_2:
                 self.assertRedirects(response, "/en/b/", status_code=301, fetch_redirect_response=False)
-                print(response["Location"])
             else:
                 self.assertRedirects(response, "/en/a/", status_code=301, fetch_redirect_response=False)
-                print(response["Location"])
                 response = self.client.get(response["Location"])
                 self.assertEqual(404, response.status_code)
-            print("====== END GET ======")
 
             # no redirect match
             response = self.client.get("/en/a/")
@@ -318,7 +314,7 @@ class TestRedirect(BaseRedirectTest):
                 new_path="/en/b/",
                 response_code="301",
             )
-            # no redirect match
+            # redirect match
             response = self.client.get("/en/a")
             self.assertRedirects(response, "/en/b/", status_code=301)
 

@@ -15,13 +15,55 @@ For each redirect you must provide:
 Each **redirect from** URL must be unique and start with a slash. If you leave out the
 leading slash when creating a redirect, it is added automatically.
 
-If the user requests a page without a trailing slash and there is no redirect for that
-URL but there is one for the URL with a trailing slash, that redirect is used. For
-backwards-compatibility, this is also true when ``APPEND_SLASH=False``.
+*****************
+Redirect examples
+*****************
 
-If ``APPEND_SLASH=True`` (the default), a trailing slash is added automatically when
-creating a redirect. That way, there is only ever a single relevant redirect,
-whether there is a trailing slash or not.
+From: ``/something/old-path`` (no trailing slash)
+To: ``/something-else/new-path/``
+``APPEND_SLASH`` setting is ``True``
+
+* When on Django >= 4.2:
+
+    * visiting ``/something/old-path`` will correctly redirect to ``something-else/new-path/``
+    * visiting ``/something/old-path/`` will return a 404
+
+* When on Django < 4.2:
+
+    * visiting ``/something/old-path`` will redirect to ``something/old-path/``
+    * visiting ``/something/old-path/`` will return a 404
+
+From: ``/something/old-path/`` (trailing slash)
+To: ``/something-else/new-path/``
+``APPEND_SLASH`` setting is ``True``
+
+* When on Django >= 4.2:
+
+    * visiting ``/something/old-path`` will correctly redirect to ``something-else/new-path/``
+    * visiting ``/something/old-path/`` will correctly redirect to ``something-else/new-path/``
+
+* When on Django < 4.2:
+
+    * visiting ``/something/old-path`` will redirect to ``something/old-path/`` and then will correctly redirect to ``something-else/new-path/``
+    * visiting ``/something/old-path/`` will correctly redirect to ``something-else/new-path/``
+
+From: ``/something/old-path`` (no trailing slash)
+To: ``/something-else/new-path/``
+``APPEND_SLASH`` setting is ``False``
+
+* Every version of Django:
+
+    * visiting ``/something/old-path`` will correctly redirect to ``something-else/new-path/``
+    * visiting ``/something/old-path/`` will return a 404
+
+From: ``/something/old-path/`` (trailing slash)
+To: ``/something-else/new-path/``
+``APPEND_SLASH`` setting is ``False``
+
+* Every version of Django:
+
+    * visiting ``/something/old-path`` will correctly redirect to ``something-else/new-path/``
+    * visiting ``/something/old-path/`` will correctly redirect to ``something-else/new-path/``
 
 ****************
 Subpath matching
