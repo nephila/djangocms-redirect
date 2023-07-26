@@ -5,7 +5,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     initial = True
 
     dependencies = [
@@ -21,7 +20,8 @@ class Migration(migrations.Migration):
                     "old_path",
                     models.CharField(
                         db_index=True,
-                        help_text="This should be an absolute path, excluding the domain name. Example: '/events/search/'.",
+                        help_text="This should be an absolute path, excluding the domain name. "
+                        "Example: '/events/search/'.",
                         max_length=200,
                         verbose_name="redirect from",
                     ),
@@ -30,7 +30,8 @@ class Migration(migrations.Migration):
                     "new_path",
                     models.CharField(
                         blank=True,
-                        help_text="This can be either an absolute path (as above) or a full URL starting with 'http://'.",
+                        help_text="This can be either an absolute path (as above) or a full URL "
+                        "starting with 'http://'.",
                         max_length=200,
                         verbose_name="redirect to",
                     ),
@@ -40,7 +41,8 @@ class Migration(migrations.Migration):
                     models.CharField(
                         choices=[("301", "301"), ("302", "302")],
                         default="301",
-                        help_text="This is the http response code returned if a destination is specified. If no destination is specified the response code will be 410.",
+                        help_text="This is the http response code returned if a destination is specified. "
+                        "If no destination is specified the response code will be 410.",
                         max_length=3,
                         verbose_name="response code",
                     ),

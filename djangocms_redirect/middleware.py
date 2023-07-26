@@ -15,7 +15,6 @@ from .utils import get_key_from_path_and_site
 
 
 class RedirectMiddleware(MiddlewareMixin):
-
     # Defined as class-level attributes to be subclassing-friendly.
     response_gone_class = http.HttpResponseGone
     response_redirect_class = http.HttpResponseRedirect
@@ -57,6 +56,7 @@ class RedirectMiddleware(MiddlewareMixin):
         cached_redirect = cache.get(key)
 
         if not cached_redirect:
+            print("possible_paths", possible_paths)
             for path in possible_paths:
                 filters = dict(site=current_site, old_path=path)
                 try:
@@ -73,6 +73,7 @@ class RedirectMiddleware(MiddlewareMixin):
                 "status_code": r.response_code if r else None,
             }
             cache.set(key, cached_redirect, timeout=getattr(settings, "DJANGOCMS_REDIRECT_CACHE_TIMEOUT", 3600))
+        print("cached_redirect", cached_redirect)
         if cached_redirect["redirect"] == "":
             return self.response_gone_class()
         if cached_redirect["status_code"] == "302":
