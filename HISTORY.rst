@@ -6,6 +6,15 @@ History
 
 .. towncrier release notes start
 
+0.7.0 (2023-08-09)
+==================
+
+Features
+--------
+
+- Add django 4.2 compatibility, drop python<3.9, djangocms<3.9 and django<3.2 (#42)
+
+
 0.6.0 (2020-11-15)
 ==================
 
