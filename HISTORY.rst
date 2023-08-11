@@ -6,6 +6,21 @@ History
 
 .. towncrier release notes start
 
+0.7.1 (2023-08-11)
+==================
+
+Features
+--------
+
+- Add missing subpath_match and catchall_redirect fields in admin (#44)
+
+
+Bugfixes
+--------
+
+- Fix django-multisite compatibility issue (#47)
+
+
 0.7.0 (2023-08-09)
 ==================
 
