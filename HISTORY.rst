@@ -6,6 +6,15 @@ History
 
 .. towncrier release notes start
 
+0.7.2 (2023-09-26)
+==================
+
+Features
+--------
+
+- Migrate to bump-my-version (#56)
+
+
 0.7.1 (2023-08-11)
 ==================
 
