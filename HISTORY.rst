@@ -6,6 +6,21 @@ History
 
 .. towncrier release notes start
 
+0.7.3 (2025-01-14)
+==================
+
+Features
+--------
+
+- Switch to Coveralls Github action (#65)
+
+
+Bugfixes
+--------
+
+- Remove print() statements in middleware.py (#82)
+
+
 0.7.2 (2023-09-26)
 ==================
 
