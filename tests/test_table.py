@@ -1,7 +1,19 @@
-from django.contrib.sites.models import Site
+from unittest import mock
 
+from django.contrib.sites.models import Site
+from django.core.cache import cache
+from django.test.utils import override_settings
+
+from djangocms_redirect import table as table_module
 from djangocms_redirect.models import Redirect
-from djangocms_redirect.table import build_table, match_path
+from djangocms_redirect.table import (
+    build_table,
+    clear_memo,
+    get_table,
+    get_version_key,
+    invalidate_site,
+    match_path,
+)
 
 from . import BaseRedirectTest
 
@@ -77,3 +89,97 @@ class TestBuildAndMatch(BaseRedirectTest):
         self._redirect("/a/", catchall_redirect=True)
 
         self.assertIsNone(match_path(build_table(self.site_1.pk), "/other/"))
+
+
+class TestTableCache(BaseRedirectTest):
+    def setUp(self):
+        super().setUp()
+        clear_memo()
+        self.redirect = Redirect.objects.create(site=self.site_1, old_path="/a/", new_path="/new/")
+
+    def _table_keys(self):
+        return [key for key in cache._cache if "CMSREDIRECT:TABLE" in key]
+
+    def test_cold_one_query_then_zero(self):
+        with self.assertNumQueries(1):
+            table = get_table(self.site_1.pk)
+        self.assertIn("/a/", table["exact"])
+
+        with self.assertNumQueries(0):
+            get_table(self.site_1.pk)
+
+    def test_failed_load_caches_nothing(self):
+        with mock.patch("djangocms_redirect.table.build_table", side_effect=RuntimeError("db down")):
+            with self.assertRaises(RuntimeError):
+                get_table(self.site_1.pk)
+        self.assertEqual(self._table_keys(), [])
+
+        with self.assertNumQueries(1):
+            table = get_table(self.site_1.pk)
+        self.assertIn("/a/", table["exact"])
+
+    def test_invalidate_reloads(self):
+        get_table(self.site_1.pk)
+        Redirect.objects.filter(pk=self.redirect.pk).update(new_path="/changed/")
+
+        self.assertEqual(get_table(self.site_1.pk)["exact"]["/a/"]["new_path"], "/new/")
+
+        invalidate_site(self.site_1.pk)
+
+        self.assertEqual(get_table(self.site_1.pk)["exact"]["/a/"]["new_path"], "/changed/")
+
+    def test_memo_serves_without_cache_roundtrip(self):
+        get_table(self.site_1.pk)
+
+        with mock.patch.object(cache, "get", side_effect=AssertionError("cache hit")):
+            get_table(self.site_1.pk)
+
+    def test_memo_expires(self):
+        clock = [1000.0]
+        with mock.patch("djangocms_redirect.table._now", side_effect=lambda: clock[0]):
+            get_table(self.site_1.pk)
+            clock[0] += 4
+            with mock.patch.object(cache, "get", side_effect=AssertionError("cache hit")):
+                get_table(self.site_1.pk)
+            clock[0] += 2
+            with mock.patch.object(cache, "get", wraps=cache.get) as cache_get:
+                get_table(self.site_1.pk)
+            self.assertTrue(cache_get.called)
+
+    @override_settings(DJANGOCMS_REDIRECT_MEMO_TIMEOUT=0)
+    def test_memo_timeout_zero_disables(self):
+        get_table(self.site_1.pk)
+
+        with mock.patch.object(cache, "get", wraps=cache.get) as cache_get:
+            get_table(self.site_1.pk)
+        self.assertTrue(cache_get.called)
+
+    @override_settings(DJANGOCMS_REDIRECT_MEMO_TIMEOUT=0)
+    def test_stale_loader_race(self):
+        real_build = table_module.build_table
+
+        def build_and_invalidate(site_id):
+            result = real_build(site_id)
+            Redirect.objects.filter(pk=self.redirect.pk).update(new_path="/changed/")
+            invalidate_site(site_id)
+            return result
+
+        with mock.patch("djangocms_redirect.table.build_table", side_effect=build_and_invalidate):
+            stale = get_table(self.site_1.pk)
+        self.assertEqual(stale["exact"]["/a/"]["new_path"], "/new/")
+
+        self.assertEqual(get_table(self.site_1.pk)["exact"]["/a/"]["new_path"], "/changed/")
+
+    @override_settings(DJANGOCMS_REDIRECT_MEMO_TIMEOUT=0)
+    def test_missing_token_reloads(self):
+        get_table(self.site_1.pk)
+        cache.delete(get_version_key(self.site_1.pk))
+
+        with self.assertNumQueries(1):
+            get_table(self.site_1.pk)
+
+    @override_settings(CACHES={"default": {"BACKEND": "django.core.cache.backends.dummy.DummyCache"}})
+    def test_dummy_cache_still_resolves(self):
+        table = get_table(self.site_1.pk)
+
+        self.assertEqual(match_path(table, "/a/")["new_path"], "/new/")
