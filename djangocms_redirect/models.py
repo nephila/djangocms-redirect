@@ -1,8 +1,7 @@
-from urllib.parse import unquote_plus
+from functools import partial
 
 from django.contrib.sites.models import Site
-from django.core.cache import cache
-from django.db import models
+from django.db import models, transaction
 from django.db.models.signals import post_delete, post_save
 from django.dispatch import receiver
 from django.utils.translation import gettext_lazy as _
@@ -63,6 +62,13 @@ class Redirect(models.Model):
         unique_together = (("site", "old_path"),)
         ordering = ("old_path",)
 
+    @classmethod
+    def from_db(cls, db, field_names, values):
+        instance = super().from_db(db, field_names, values)
+        # remember the site the redirect was loaded with: if it is changed, the table of the old site is stale too
+        instance._loaded_site_id = instance.__dict__.get("site_id")
+        return instance
+
     def clean(self):
         self.old_path = normalize_url(self.old_path)
         super().clean()
@@ -73,9 +79,16 @@ class Redirect(models.Model):
 
 @receiver(post_save, sender=Redirect)
 @receiver(post_delete, sender=Redirect)
-def clear_redirect_cache(**kwargs):
-    from .utils import get_key_from_path_and_site
+def clear_redirect_cache(sender, instance, **kwargs):
+    from .table import invalidate_site
 
-    path = unquote_plus(kwargs["instance"].old_path)
-    key = get_key_from_path_and_site(path, kwargs["instance"].site_id)
-    cache.delete(key)
+    site_ids = {instance.site_id}
+    loaded_site_id = getattr(instance, "_loaded_site_id", None)
+    if loaded_site_id is not None:
+        site_ids.add(loaded_site_id)
+    for site_id in site_ids:
+        # invalidate now (changes are visible to this connection) and again once the transaction is committed:
+        # a table loaded by another process in between would have been built from the pre-commit data.
+        invalidate_site(site_id)
+        transaction.on_commit(partial(invalidate_site, site_id))
+    instance._loaded_site_id = instance.site_id

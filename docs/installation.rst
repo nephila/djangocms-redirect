@@ -43,10 +43,32 @@ Settings
 ========
 
 * ``DJANGOCMS_REDIRECT_USE_REQUEST``: If ``True`` the redirect check will be done in the request phase,
-  to allow preempting any other logic. **Beware**: this will result in extra queries on **each**
-  request because the redirects will be checked before the view logic triggers.
+  to allow preempting any other logic. **Beware**: the redirects will be checked on **each** request,
+  before the view logic triggers (once the redirect table is cached this does not cost any query).
   If ``False`` the redirect will be checked in the response phase.
-* ``DJANGOCMS_REDIRECT_CACHE_TIMEOUT``: You can provide a custom cache timeout (Default: 3600 sec)
+* ``DJANGOCMS_REDIRECT_CACHE_TIMEOUT``: You can provide a custom timeout for the cached redirect table
+  (Default: 3600 sec)
+* ``DJANGOCMS_REDIRECT_MEMO_TIMEOUT``: Seconds the redirect table is kept in the memory of each process, on top
+  of the shared cache, to spare a cache round trip on each request (Default: 5 sec, ``0`` disables it)
 * ``DJANGOCMS_REDIRECT_404_ONLY``: If ``True`` (the default) and ``DJANGOCMS_REDIRECT_USE_REQUEST=False``
   the redirect will be checked only for responses that return 404 (the default ``django.contrib.redirect``
   behavior). This is the lowest impact option in terms of performance and the advised configuration.
+
+How caching works
+=================
+
+The whole redirect table of a site is loaded with a single query and stored in the Django cache, so
+requests for paths that do not match any redirect do not hit the database once the table is cached. Make sure
+the configured cache is shared between processes (e.g. memcached or redis) in multi-process deployments.
+
+* Saving or deleting a redirect (e.g. from the admin) invalidates the table of its site (again once the
+  transaction is committed): the new table is loaded on the next request.
+* A process that already holds the table in memory keeps serving it for at most
+  ``DJANGOCMS_REDIRECT_MEMO_TIMEOUT`` seconds; the process that made the change sees it immediately.
+* Bulk operations that do not send signals (``QuerySet.update()``, ``QuerySet.delete()``) do **not** invalidate
+  the cache: the change is visible once ``DJANGOCMS_REDIRECT_CACHE_TIMEOUT`` expires. Clear the cache to apply
+  it sooner.
+* The table of a site is stored as a single cache value. It is meant for the usual few hundreds of redirects;
+  with many thousands of redirects the value can exceed the item size limit of the cache backend (1 MB by
+  default on memcached) and the table would be loaded again on every request.
+* Subpath and catch-all redirects are matched against the redirects of the current site only.
