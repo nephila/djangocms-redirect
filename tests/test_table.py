@@ -6,14 +6,7 @@ from django.test.utils import override_settings
 
 from djangocms_redirect import table as table_module
 from djangocms_redirect.models import Redirect
-from djangocms_redirect.table import (
-    build_table,
-    clear_memo,
-    get_table,
-    get_version_key,
-    invalidate_site,
-    match_path,
-)
+from djangocms_redirect.table import build_table, clear_memo, get_table, get_version_key, invalidate_site, match_path
 
 from . import BaseRedirectTest
 
@@ -109,9 +102,10 @@ class TestTableCache(BaseRedirectTest):
             get_table(self.site_1.pk)
 
     def test_failed_load_caches_nothing(self):
-        with mock.patch("djangocms_redirect.table.build_table", side_effect=RuntimeError("db down")):
-            with self.assertRaises(RuntimeError):
-                get_table(self.site_1.pk)
+        with mock.patch("djangocms_redirect.table.build_table", side_effect=RuntimeError("db down")), self.assertRaises(
+            RuntimeError
+        ):
+            get_table(self.site_1.pk)
         self.assertEqual(self._table_keys(), [])
 
         with self.assertNumQueries(1):

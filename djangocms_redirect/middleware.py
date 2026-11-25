@@ -58,9 +58,9 @@ class RedirectMiddleware(MiddlewareMixin):
         if redirect == "":
             return self.response_gone_class()
         if status_code == "302":
-            return self.response_redirect_class("{}{}".format(redirect, querystring))
+            return self.response_redirect_class(f"{redirect}{querystring}")
         elif status_code == "301":
-            return self.response_permanent_redirect_class("{}{}".format(redirect, querystring))
+            return self.response_permanent_redirect_class(f"{redirect}{querystring}")
         elif status_code == "410":
             return self.response_gone_class()
 

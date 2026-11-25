@@ -1,9 +1,8 @@
+from unittest import mock
 from urllib.parse import unquote_plus
 
 import django
 from django.conf import settings
-from unittest import mock
-
 from django.contrib.sites.models import Site
 from django.core.cache import cache
 from django.core.exceptions import ImproperlyConfigured
@@ -498,7 +497,7 @@ class TestCachedTable(BaseRedirectTest):
         self._get("/en/warm-up/")
 
         for index in range(5):
-            response, redirect_queries = self._get("/en/unknown-{}/".format(index))
+            response, redirect_queries = self._get(f"/en/unknown-{index}/")
             self.assertEqual(response.status_code, 404)
             self.assertEqual(redirect_queries, 0)
 
@@ -515,7 +514,7 @@ class TestCachedTable(BaseRedirectTest):
         keys_before = len(self._redirect_cache_keys())
 
         for index in range(20):
-            self._get("/en/unknown-{}/".format(index))
+            self._get(f"/en/unknown-{index}/")
 
         self.assertEqual(len(self._redirect_cache_keys()), keys_before)
 
@@ -560,9 +559,10 @@ class TestCachedTable(BaseRedirectTest):
     def test_table_load_failure_propagates_and_next_request_retries(self):
         Redirect.objects.create(site=self.site_1, old_path="/en/a/", new_path="/target/")
 
-        with mock.patch("djangocms_redirect.table.build_table", side_effect=RuntimeError("db down")):
-            with self.assertRaises(RuntimeError):
-                self.client.get("/en/a/")
+        with mock.patch("djangocms_redirect.table.build_table", side_effect=RuntimeError("db down")), self.assertRaises(
+            RuntimeError
+        ):
+            self.client.get("/en/a/")
 
         self.assertEqual(self.client.get("/en/a/").status_code, 301)
 

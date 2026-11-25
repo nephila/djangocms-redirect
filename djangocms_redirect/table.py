@@ -54,12 +54,12 @@ _now = time.monotonic
 
 def get_version_key(site_id):
     """Cache key of the token that versions the table of a site."""
-    return "CMSREDIRECT:VERSION:{}".format(site_id)
+    return f"CMSREDIRECT:VERSION:{site_id}"
 
 
 def get_table_key(site_id, token):
     """Cache key of the table of a site for a given version token."""
-    return "CMSREDIRECT:TABLE:{}:{}".format(site_id, token)
+    return f"CMSREDIRECT:TABLE:{site_id}:{token}"
 
 
 def clear_memo():
