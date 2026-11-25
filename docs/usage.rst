@@ -28,11 +28,6 @@ To: ``/something-else/new-path/``
     * visiting ``/something/old-path`` will correctly redirect to ``something-else/new-path/``
     * visiting ``/something/old-path/`` will return a 404
 
-* When on Django < 4.2:
-
-    * visiting ``/something/old-path`` will redirect to ``something/old-path/``
-    * visiting ``/something/old-path/`` will return a 404
-
 From: ``/something/old-path/`` (trailing slash)
 To: ``/something-else/new-path/``
 ``APPEND_SLASH`` setting is ``True``
@@ -40,11 +35,6 @@ To: ``/something-else/new-path/``
 * When on Django >= 4.2:
 
     * visiting ``/something/old-path`` will correctly redirect to ``something-else/new-path/``
-    * visiting ``/something/old-path/`` will correctly redirect to ``something-else/new-path/``
-
-* When on Django < 4.2:
-
-    * visiting ``/something/old-path`` will redirect to ``something/old-path/`` and then will correctly redirect to ``something-else/new-path/``
     * visiting ``/something/old-path/`` will correctly redirect to ``something-else/new-path/``
 
 From: ``/something/old-path`` (no trailing slash)

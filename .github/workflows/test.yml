@@ -9,39 +9,30 @@ jobs:
     continue-on-error: ${{ matrix.continue-on-error }}
     strategy:
       matrix:
-        python-version: ["3.11", "3.10", "3.9"]
-        django: [42, 41, 32]
-        cms: [311, 39]
+        python-version: ["3.13", "3.11"]
+        django: [52, 42]
+        cms: [311]
         continue-on-error: [false]
-        exclude:
-          - django: 41
-            cms: 39
-          - django: 42
-            cms: 39
-          - django: 32
-            cms: 311
-          - django: 42
-            cms: 311
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
         python-version: ${{ matrix.python-version }}
     - name: Cache pip
-      uses: actions/cache@v3
+      uses: actions/cache@v4
       with:
         path: ~/.cache/pip
-        key: ${{ runner.os }}-pip-${{ matrix.toxenv }}
+        key: ${{ runner.os }}-pip-${{ format('py{0}-django{1}-cms{2}', matrix.python-version, matrix.django, matrix.cms) }}
         restore-keys: |
-          ${{ runner.os }}-pip-${{ matrix.toxenv }}
+          ${{ runner.os }}-pip-${{ format('py{0}-django{1}-cms{2}', matrix.python-version, matrix.django, matrix.cms) }}
     - name: Cache tox
-      uses: actions/cache@v3
+      uses: actions/cache@v4
       with:
         path: .tox
-        key: ${{ runner.os }}-tox-${{ format('{{py{0}-django{1}-cms{2}}}', matrix.python-version, matrix.django, matrix.cms) }}-${{ hashFiles('setup.cfg') }}
+        key: ${{ runner.os }}-tox-${{ format('py{0}-django{1}-cms{2}', matrix.python-version, matrix.django, matrix.cms) }}-${{ hashFiles('setup.cfg') }}
         restore-keys: |
-          ${{ runner.os }}-tox-${{ format('{{py{0}-django{1}-cms{2}}}', matrix.python-version, matrix.django, matrix.cms) }}-
+          ${{ runner.os }}-tox-${{ format('py{0}-django{1}-cms{2}', matrix.python-version, matrix.django, matrix.cms) }}-
     - name: Install dependencies
       run: |
         sudo apt-get install gettext memcached
@@ -60,11 +51,11 @@ jobs:
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         parallel: true
-    - uses: codecov/codecov-action@v3
+    - uses: codecov/codecov-action@v5
       with:
         token: ${{ secrets.CODECOV_TOKEN }}
         flags: unittests
-        file: ./coverage.xml
+        files: ./coverage.xml
         fail_ci_if_error: false
     services:
       redis:

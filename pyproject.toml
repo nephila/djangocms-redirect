@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [tool.black]
 line-length = 119
-target-version = ["py36"]
+target-version = ["py311"]
 include = 'djangocms_redirect/*py'
 
 [tool.towncrier]
@@ -43,7 +43,7 @@ use_parentheses = true
 [tool.ruff]
 ignore = []
 line-length = 119
-target-version = "py310"
+target-version = "py311"
 
 [tool.ruff.mccabe]
 max-complexity = 10
