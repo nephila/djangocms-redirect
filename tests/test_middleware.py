@@ -583,8 +583,9 @@ class TestCachedTable(BaseRedirectTest):
     def test_table_load_failure_propagates_and_next_request_retries(self):
         Redirect.objects.create(site=self.site_1, old_path="/en/a/", new_path="/target/")
 
-        with mock.patch("djangocms_redirect.table.build_table", side_effect=RuntimeError("db down")), self.assertRaises(
-            RuntimeError
+        with (
+            mock.patch("djangocms_redirect.table.build_table", side_effect=RuntimeError("db down")),
+            self.assertRaises(RuntimeError),
         ):
             self.client.get("/en/a/")
 

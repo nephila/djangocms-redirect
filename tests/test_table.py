@@ -102,8 +102,9 @@ class TestTableCache(BaseRedirectTest):
             get_table(self.site_1.pk)
 
     def test_failed_load_caches_nothing(self):
-        with mock.patch("djangocms_redirect.table.build_table", side_effect=RuntimeError("db down")), self.assertRaises(
-            RuntimeError
+        with (
+            mock.patch("djangocms_redirect.table.build_table", side_effect=RuntimeError("db down")),
+            self.assertRaises(RuntimeError),
         ):
             get_table(self.site_1.pk)
         self.assertEqual(self._table_keys(), [])
