@@ -7,6 +7,7 @@ from django.test.utils import override_settings
 from djangocms_redirect import table as table_module
 from djangocms_redirect.models import Redirect
 from djangocms_redirect.table import build_table, clear_memo, get_table, get_version_key, invalidate_site, match_path
+from djangocms_redirect.utils import get_key_from_path_and_site
 
 from . import BaseRedirectTest
 
@@ -178,3 +179,12 @@ class TestTableCache(BaseRedirectTest):
         table = get_table(self.site_1.pk)
 
         self.assertEqual(match_path(table, "/a/")["new_path"], "/new/")
+
+
+class TestPathKey(BaseRedirectTest):
+    def test_key_is_memcached_safe(self):
+        key = get_key_from_path_and_site("/" + "a" * 500, 123)
+
+        self.assertTrue(key.startswith("CMSREDIRECT:"))
+        self.assertTrue(key.endswith(":123"))
+        self.assertLess(len(key), 250)
