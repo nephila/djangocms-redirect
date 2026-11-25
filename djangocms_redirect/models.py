@@ -1,5 +1,7 @@
+from functools import partial
+
 from django.contrib.sites.models import Site
-from django.db import models
+from django.db import models, transaction
 from django.db.models.signals import post_delete, post_save
 from django.dispatch import receiver
 from django.utils.translation import gettext_lazy as _
@@ -85,4 +87,8 @@ def clear_redirect_cache(sender, instance, **kwargs):
     if loaded_site_id is not None:
         site_ids.add(loaded_site_id)
     for site_id in site_ids:
+        # invalidate now (changes are visible to this connection) and again once the transaction is committed:
+        # a table loaded by another process in between would have been built from the pre-commit data.
         invalidate_site(site_id)
+        transaction.on_commit(partial(invalidate_site, site_id))
+    instance._loaded_site_id = instance.site_id

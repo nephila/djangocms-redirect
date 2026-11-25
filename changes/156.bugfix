@@ -1,0 +1,1 @@
+Subpath and catch-all redirects are now matched only against the redirects of the current site (they used to be matched across all the sites).

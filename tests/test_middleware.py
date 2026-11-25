@@ -14,6 +14,7 @@ from setuptools._distutils.version import LooseVersion
 from djangocms_redirect.admin import RedirectForm
 from djangocms_redirect.middleware import RedirectMiddleware
 from djangocms_redirect.models import Redirect
+from djangocms_redirect.table import get_table, get_version_key
 
 from . import BaseRedirectTest
 
@@ -555,6 +556,29 @@ class TestCachedTable(BaseRedirectTest):
         redirect.save()
 
         self.assertEqual(self.client.get("/en/moving/").status_code, 404)
+
+    def test_site_moved_twice_invalidates_every_site_it_was_on(self):
+        site_3 = Site.objects.create(domain="third.example.com", name="third")
+        redirect = Redirect.objects.create(site=self.site_1, old_path="/en/moving/", new_path="/target/")
+        redirect = Redirect.objects.get(pk=redirect.pk)
+        redirect.site = self.site_2
+        redirect.save()
+        self.assertEqual(get_table(self.site_2.pk)["exact"]["/en/moving/"]["new_path"], "/target/")
+
+        redirect.site = site_3
+        redirect.save()
+
+        self.assertNotIn("/en/moving/", get_table(self.site_2.pk)["exact"])
+
+    def test_invalidation_is_repeated_on_commit(self):
+        with self.captureOnCommitCallbacks(execute=False) as callbacks:
+            Redirect.objects.create(site=self.site_1, old_path="/en/a/", new_path="/target/")
+        token_after_save = cache.get(get_version_key(self.site_1.pk))
+
+        for callback in callbacks:
+            callback()
+
+        self.assertNotEqual(cache.get(get_version_key(self.site_1.pk)), token_after_save)
 
     def test_table_load_failure_propagates_and_next_request_retries(self):
         Redirect.objects.create(site=self.site_1, old_path="/en/a/", new_path="/target/")
